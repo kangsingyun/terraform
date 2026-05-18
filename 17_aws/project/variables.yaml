@@ -1,0 +1,76 @@
+region: "ap-northeast-2"
+region_name: "seoul"
+cidr_block: "10.2.0.0/16"
+count_of_public_subnets: 2
+count_of_private_subnets: 2
+subnet_bit: 8
+count_of_az: 2
+create_nat_gw: false
+algorithm: "ED25519"
+
+sg_map:
+  icmp:
+    description: "ICMP Echo Requests"
+    ingress_rules:
+      echo:
+        protocol: "icmp"
+        from_port: 8
+        to_port: 0
+        cidr_blocks: ["0.0.0.0/0"]
+    egress_rules: {}
+  remote:
+    description: "remote access - only company"
+    ingress_rules:
+      ssh:
+        protocol: "tcp"
+        from_port: 22
+        to_port: 22
+        cidr_blocks: ["183.98.32.210/32"]
+    egress_rules: {}
+  web:
+    description: "Web Traffics - AnyWhere"
+    ingress_rules:
+      http:
+        protocol: "tcp"
+        from_port: 80
+        to_port: 80
+        cidr_blocks: ["0.0.0.0/0"]
+      https:
+        protocol: "tcp"
+        from_port: 443
+        to_port: 443
+        cidr_blocks: ["0.0.0.0/0"]
+    egress_rules: {}
+  cache:
+    description: "Cache Server - Only company"
+    ingress_rules:
+      redis:
+        protocol: "tcp"
+        from_port: 6379
+        to_port: 6379
+        cidr_blocks: ["10.2.0.0/16"]
+    egress_rules: {}
+  db:
+    description: "DataBase Server - Only company"
+    ingress_rules:
+      mysql:
+        protocol: "tcp"
+        from_port: 3306
+        to_port: 3306
+        cidr_blocks: ["10.2.0.0/16"]
+    egress_rules: {}
+  out:
+    description: "Outbound Traffics - all"
+    ingress_rules: {}
+    egress_rules:
+      all:
+        protocol: "-1"
+        from_port: 0
+        to_port: 0
+        cidr_blocks: ["0.0.0.0/0"]
+
+ec2_web:
+  ami: "ami-010502f62836f0c67"
+  instance_type: "t3.micro"
+  associate_public_ip_address: true
+  sg_names: ["icmp", "remote", "web", "out"]
