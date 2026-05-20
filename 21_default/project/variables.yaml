@@ -1,0 +1,164 @@
+#AWS Account ID
+account_id: "511874874257"
+
+# AWS 리전코드
+region: "ap-northeast-2"
+
+# AWS 리전명
+region_name: "seoul"
+
+# AWS VPC 네트워크 전체 CIDR Block
+cidr_block: "10.2.0.0/16"
+
+# 공인 subnet의 수
+count_of_public_subnets: 2
+
+# 사설 subnet의 수
+count_of_private_subnets: 2
+
+# 서브넷팅 bit 수
+subnet_bit: 8
+
+# 가용 영역 사용 수량
+count_of_az: 2
+
+# NAT 게이트웨이 사용여부, 사용시 가용 영역 수량에 맞쳐짐
+create_nat_gw: false
+
+# 키페어 타입과 길이, RSA 타입 사용시 길이를 적용함
+algorithm: "ED25519"
+# rsa_bits: 2048
+
+#S3 Bucket subname
+s3_subname: "wordpress"
+
+#AWS IAM 역할 이름
+iam_role_name: "role-ec2-access-s3"
+
+#S3 Bucket upload Files
+s3_file_map:
+  wp-config:
+    key: "wp-config.php"
+    source: "./wp-config.php"
+  file1:
+    key: "file1.txt"
+    source: "./file.txt"
+# 보안 그룹 정책들
+# ingress 정책들: icmp, remote, web, cahe, db
+# egress  정책들: out(all)
+sg_map:
+  icmp:
+    description: "ICMP Echo Requests"
+    ingress_rules:
+      echo:
+        protocol: "icmp"
+        from_port: 8
+        to_port: 0
+        cidr_blocks: 
+          - 0.0.0.0/0
+    egress_rules: {}
+  remote:
+    description: " Remote Access - Only Company"
+    ingress_rules:
+      ssh:
+        protocol: "tcp"
+        from_port: 22
+        to_port: 22
+        cidr_blocks: 
+          - 183.98.32.210/32
+    egress_rules: {}
+  web:
+    description: "Web Traffics - AnyWhere"
+    ingress_rules:
+      http:
+        protocol: "tcp"
+        from_port: 80
+        to_port: 80
+        cidr_blocks: 
+          - 0.0.0.0/0
+      https:
+        protocol: "tcp"
+        from_port: 443
+        to_port: 443
+        cidr_blocks: 
+          - 0.0.0.0/0
+    egress_rules: {}
+  cache:
+    description: "Cache Server - Only Company"
+    ingress_rules:
+      redis:
+        protocol: "tcp"
+        from_port: 6379
+        to_port: 6379
+        cidr_blocks: 
+          - "10.2.0.0/16"
+    egress_rules: {}
+  db:
+    description: "DataBase Server - Only Company"
+    ingress_rules:
+      mysql:
+        protocol: "tcp"
+        from_port: 3306
+        to_port: 3306
+        cidr_blocks: 
+          - "10.2.0.0/16"
+    egress_rules: {}
+  out:
+    description: "Outbound Traffics - all"
+    ingress_rules: {}
+    egress_rules:
+      all:
+        protocol: "-1"
+        from_port: 0
+        to_port: 0
+        cidr_blocks: 
+          - "0.0.0.0/0"
+  lb:
+    description: "for LoadBalancer"
+    ingress_rules:
+      http:
+        protocol: "tcp"
+        from_port: 80
+        to_port: 80
+        cidr_blocks: 
+          - "0.0.0.0/0"
+    egress_rules: 
+      http:
+        protocol: "tcp"
+        from_port: 80
+        to_port: 80
+        cidr_blocks:
+          - "10.2.0.0/16"
+web:
+  count: 2
+  sg_names:
+    - icmp
+    - remote
+    - web
+    - out
+lt_web:
+  name: ec2-temp-web
+  description: "web server - wordpress"
+  image_id: "ami-0d4c056a16f3ae150"
+  instance_type: "t3.micro"
+  iam_instance_profile:
+    name: "role-ec2-access-s3"
+  user_data: "./start_script.sh"
+
+tg_web:
+  description: "타겟 그룹"
+  name: "tg-webserver"
+  port: 80
+  protocol: "HTTP"
+  protocol_version: "HTTP1"
+  ip_address_type: "ipv4"
+  target_type: "instance"
+  health_check:
+    path: "/"
+    protocol: "HTTP"
+    port: "traffic-port"
+    healthy_threshold: 3
+    unhealthy_threshold: 3
+    timeout: 2
+    interval: 5
+    matcher: "200-299"
